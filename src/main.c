@@ -16,6 +16,8 @@ static Layer *s_motivational_text_layer;
 static BitmapLayer *s_background_layer;
 static GBitmap *s_nero_bitmap;
 
+static InverterLayer *s_battery_layer;
+
 static void update_hours(Layer *this_layer, GContext *ctx) {
   static char hours_buff[MAX_HOURS_BUFFER] = {0};
   int hours_buffer_len = MAX_HOURS_BUFFER;
@@ -52,6 +54,18 @@ static void update_motivational_text(Layer *this_layer, GContext *ctx) {
    draw_text_with_outline(ctx, motivational_text, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 0);
 }
 
+static void battery_state_subscriber(BatteryChargeState charge) {
+  int battery_tens = 0;
+  double cover_percentage = 0;
+  if (charge.is_plugged) {
+    layer_set_frame(inverter_layer_get_layer(s_battery_layer), GRect(0, 0, 0, 0));
+  } else if(0 == (charge.charge_percent % 10)) {
+    battery_tens = charge.charge_percent / 10;
+    cover_percentage = ((10.0 - battery_tens) / 10);
+    layer_set_frame(inverter_layer_get_layer(s_battery_layer), GRect(0, 0, PEBBLE_WIDTH,PEBBLE_HEIGHT * cover_percentage));
+  }
+}
+
 static void update_time() {
   // Display this time on the TextLayer
   layer_mark_dirty(s_hours_layer);
@@ -65,8 +79,13 @@ static void main_window_load(Window *window) {
   
   bitmap_layer_set_bitmap(s_background_layer, s_nero_bitmap);
   
-  layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_background_layer));
+  s_battery_layer = inverter_layer_create(GRect(0, 0, 0, 0));
   
+  layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_background_layer));
+  layer_add_child(window_get_root_layer(window), inverter_layer_get_layer(s_battery_layer));
+  
+  battery_state_service_subscribe(battery_state_subscriber);
+                                          
   // Create time TextLayer
   s_hours_layer = layer_create(GRect(HOURS_LAYER_X, HOURS_LAYER_Y, PEBBLE_WIDTH, HOURS_LAYER_HEIGHT));
   s_minutes_layer = layer_create(GRect(MINUTES_LAYER_X, MINUTES_LAYER_Y, PEBBLE_WIDTH, MINUTE_LAYER_HEIGHT));
@@ -90,6 +109,8 @@ static void main_window_unload(Window *window) {
   
   gbitmap_destroy(s_nero_bitmap);
   bitmap_layer_destroy(s_background_layer);
+  inverter_layer_destroy(s_battery_layer);
+  battery_state_service_unsubscribe();
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
