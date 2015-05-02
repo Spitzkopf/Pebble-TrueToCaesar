@@ -6,6 +6,7 @@
 
 #define MAX_HOURS_BUFFER 16
 #define MAX_MINUTES_BUFFER 16
+#define MAX_BATTERY_BUFFER 16
   
 static Window *s_main_window;
 
@@ -17,6 +18,9 @@ static BitmapLayer *s_background_layer;
 static GBitmap *s_nero_bitmap;
 
 static InverterLayer *s_battery_layer;
+
+static Layer *s_statusbox_layer;
+static Layer *s_statusbox_content_layer;
 
 static void update_hours(Layer *this_layer, GContext *ctx) {
   static char hours_buff[MAX_HOURS_BUFFER] = {0};
@@ -50,18 +54,13 @@ static void update_minutes(Layer *this_layer, GContext *ctx) {
 }
 
 static void update_motivational_text(Layer *this_layer, GContext *ctx) {
-  static char motivational_text[] = "Roma delenda est";
   GRect battery_layer_rect = layer_get_frame(inverter_layer_get_layer(s_battery_layer));
-
-  /*APP_LOG(APP_LOG_LEVEL_INFO, "updating motivatinal text");
-    APP_LOG(APP_LOG_LEVEL_INFO, "battery layer: %hu", battery_layer_rect.size.h);
-    APP_LOG(APP_LOG_LEVEL_INFO, "motivatinal: %d", (int)(MOTIVATIONAL_LAYER_Y + (MOTIVATIONAL_LAYER_HEIGHT / 2)));*/
-
+  
   //if the inversion layer is in the middle of the text +-, inverse the coloring
   if (battery_layer_rect.size.h >= (MOTIVATIONAL_LAYER_Y + (MOTIVATIONAL_LAYER_HEIGHT / 2))) {
-    draw_text_with_outline(ctx, motivational_text, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 1);
+    draw_text_with_outline(ctx, MOTIVATIONAL_TEXT, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 1);
   } else {
-    draw_text_with_outline(ctx, motivational_text, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 0);
+    draw_text_with_outline(ctx, MOTIVATIONAL_TEXT, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 0);
   }
 }
 
@@ -77,6 +76,22 @@ static void battery_state_subscriber(BatteryChargeState charge) {
   }
   //the motivational text may need to recolor due to the inversion
   layer_mark_dirty(s_motivational_text_layer);
+  
+  struct StatusBarInfo* sb_info = layer_get_data(s_statusbox_content_layer);
+  
+  memcpy(&sb_info->charge, &charge, sizeof(BatteryChargeState));
+  layer_mark_dirty(s_statusbox_content_layer);
+}
+
+static void bluetooth_state_subscriber(bool connected) {
+  struct StatusBarInfo* sb_info = layer_get_data(s_statusbox_content_layer);
+  
+  if (connected != sb_info->bt_connected) {
+    vibes_short_pulse();
+  }
+  
+  memcpy(&sb_info->bt_connected, &connected, sizeof(bool));
+  layer_mark_dirty(s_statusbox_content_layer);
 }
 
 static void update_time() {
@@ -85,6 +100,47 @@ static void update_time() {
   layer_mark_dirty(s_minutes_layer);
 }
 
+static void draw_status_box_layer(Layer *this_layer, GContext *ctx) {
+  GRect bounds = layer_get_bounds(this_layer);
+
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_fill_rect(ctx,bounds, 0, GCornersAll);
+}
+
+static Layer* initialize_status_box() {
+  Layer* statusbox_layer = layer_create(GRect(0, PEBBLE_HEIGHT - 15, PEBBLE_WIDTH, 15));
+  layer_set_update_proc(statusbox_layer, draw_status_box_layer);
+  return statusbox_layer;
+}
+
+static void draw_statusbox_content(Layer* this_layer, GContext *ctx) {
+  static char battery[MAX_BATTERY_BUFFER] = {0};
+  int battery_buffer_len = MAX_BATTERY_BUFFER;
+  
+  struct StatusBarInfo* sb_info = NULL;
+  GRect bounds = layer_get_bounds(this_layer);
+  
+  sb_info = (struct StatusBarInfo*)layer_get_data(this_layer);
+  
+  int_to_roman(sb_info->charge.charge_percent, battery, &battery_buffer_len);
+  strcat(battery, "%");
+  
+  graphics_context_set_fill_color(ctx, GColorWhite);
+  graphics_draw_text(ctx, battery, s_roman_font_14, bounds, GTextOverflowModeFill, GTextAlignmentLeft, NULL);
+  graphics_draw_text(ctx, sb_info->bt_connected ? BT_ON_TEXT : BT_OFF_TEXT, s_roman_font_14, bounds, GTextOverflowModeFill, GTextAlignmentRight, NULL);
+}
+
+static Layer* initialize_status_box_content(Layer* status_box_layer) {
+  GRect bounds = layer_get_frame(status_box_layer);
+  Layer* content_layer = layer_create_with_data(bounds, sizeof(struct StatusBarInfo));
+  
+  //set initial bt info
+  struct StatusBarInfo* sb_info = (struct StatusBarInfo*)layer_get_data(content_layer);
+  sb_info->bt_connected = bluetooth_connection_service_peek();
+  
+  layer_set_update_proc(content_layer, draw_statusbox_content);
+  return content_layer;
+}
 
 static void main_window_load(Window *window) {
   s_nero_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_NERO_WHITE_ON_BLACK);
@@ -93,11 +149,16 @@ static void main_window_load(Window *window) {
   bitmap_layer_set_bitmap(s_background_layer, s_nero_bitmap);
   
   s_battery_layer = inverter_layer_create(GRect(0, 0, 0, 0));
+  s_statusbox_layer = initialize_status_box();
+  s_statusbox_content_layer = initialize_status_box_content(s_statusbox_layer);
   
   layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_background_layer));
   layer_add_child(window_get_root_layer(window), inverter_layer_get_layer(s_battery_layer));
+  layer_add_child(window_get_root_layer(window), s_statusbox_layer);
+  layer_add_child(window_get_root_layer(window), s_statusbox_content_layer);
   
   battery_state_service_subscribe(battery_state_subscriber);
+  bluetooth_connection_service_subscribe(bluetooth_state_subscriber);
                                           
   // Create time TextLayer
   s_hours_layer = layer_create(GRect(HOURS_LAYER_X, HOURS_LAYER_Y, PEBBLE_WIDTH, HOURS_LAYER_HEIGHT));
@@ -113,19 +174,24 @@ static void main_window_load(Window *window) {
   layer_add_child(window_get_root_layer(window), s_minutes_layer);
   layer_add_child(window_get_root_layer(window), s_motivational_text_layer);
   layer_mark_dirty(s_motivational_text_layer);
+  layer_mark_dirty(s_statusbox_layer);
   //update to battery at launch
   battery_state_subscriber(battery_state_service_peek());
+  bluetooth_state_subscriber(bluetooth_connection_service_peek());
 }
 
 static void main_window_unload(Window *window) {
   layer_destroy(s_hours_layer);
   layer_destroy(s_minutes_layer);
   layer_destroy(s_motivational_text_layer);
+  layer_destroy(s_statusbox_layer);
+  layer_destroy(s_statusbox_content_layer);
   
   gbitmap_destroy(s_nero_bitmap);
   bitmap_layer_destroy(s_background_layer);
   inverter_layer_destroy(s_battery_layer);
   battery_state_service_unsubscribe();
+  bluetooth_connection_service_unsubscribe();
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
