@@ -32,7 +32,9 @@ static void update_hours(Layer *this_layer, GContext *ctx) {
   int hours_as_12 = tick_time->tm_hour ? tick_time->tm_hour : 12;
   hours_as_12 = (hours_as_12) > 12 ? hours_as_12 - 12 : hours_as_12;
   
-  int_to_roman(hours_as_12, hours_buff, &hours_buffer_len);
+  if (!int_to_roman(hours_as_12, hours_buff, &hours_buffer_len)) {
+    TERMINATE_AND_LOG_ERROR("Failed converting hours to roman numerals. Hour: %d", hours_as_12);
+  }
   
   draw_text_with_outline(ctx, hours_buff, s_roman_font_30, GRect(2, 2, PEBBLE_WIDTH, HOURS_LAYER_HEIGHT - 5), GTextOverflowModeFill, GTextAlignmentCenter, 1);
 }
@@ -45,7 +47,9 @@ static void update_minutes(Layer *this_layer, GContext *ctx) {
   struct tm *tick_time = localtime(&temp);
   
   if (tick_time->tm_min) {
-      int_to_roman(tick_time->tm_min, minutes_buff, &minutes_buffer_len);
+      if (!int_to_roman(tick_time->tm_min, minutes_buff, &minutes_buffer_len)) {
+        TERMINATE_AND_LOG_ERROR("Failed converting minutes to roman numerals. Minutes: %d", tick_time->tm_min);
+      }
   } else {
     memset(minutes_buff, '\0', MAX_MINUTES_BUFFER);
   }
@@ -122,7 +126,10 @@ static void draw_statusbox_content(Layer* this_layer, GContext *ctx) {
   
   sb_info = (struct StatusBarInfo*)layer_get_data(this_layer);
   
-  int_to_roman(sb_info->charge.charge_percent, battery, &battery_buffer_len);
+  if (!int_to_roman(sb_info->charge.charge_percent, battery, &battery_buffer_len)) {
+      TERMINATE_AND_LOG_ERROR("Failed converting battery to roman numerals. Battery charge: %d", (int)sb_info->charge.charge_percent);
+  }
+  
   strcat(battery, "%");
   
   graphics_context_set_fill_color(ctx, GColorWhite);
@@ -175,6 +182,7 @@ static void main_window_load(Window *window) {
   layer_add_child(window_get_root_layer(window), s_motivational_text_layer);
   layer_mark_dirty(s_motivational_text_layer);
   layer_mark_dirty(s_statusbox_layer);
+  
   //update to battery at launch
   battery_state_subscriber(battery_state_service_peek());
   bluetooth_state_subscriber(bluetooth_connection_service_peek());
@@ -190,6 +198,7 @@ static void main_window_unload(Window *window) {
   gbitmap_destroy(s_nero_bitmap);
   bitmap_layer_destroy(s_background_layer);
   inverter_layer_destroy(s_battery_layer);
+  
   battery_state_service_unsubscribe();
   bluetooth_connection_service_unsubscribe();
 }

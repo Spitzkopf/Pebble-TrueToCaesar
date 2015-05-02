@@ -19,6 +19,11 @@
 #define MOTIVATIONAL_LAYER_X 0
 #define MOTIVATIONAL_LAYER_Y 5
 
+#define TERMINATE_AND_LOG_ERROR(fmt, ...) \
+  APP_LOG(APP_LOG_LEVEL_ERROR, fmt, ##__VA_ARGS__); \
+  window_stack_pop_all(false)
+
+  
 GFont s_roman_font_30;
 GFont s_roman_font_14;
 
