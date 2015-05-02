@@ -49,7 +49,7 @@ static void update_minutes(Layer *this_layer, GContext *ctx) {
 
 static void update_motivational_text(Layer *this_layer, GContext *ctx) {
    static char motivational_text[] = "Roma delenda est";
-   draw_text_with_outline(ctx, motivational_text, s_roman_font_20, GRect(2, 2, 144, 40), GTextOverflowModeFill, GTextAlignmentCenter, 1);
+   draw_text_with_outline(ctx, motivational_text, s_roman_font_20, GRect(2, 2, 144, 40), GTextOverflowModeFill, GTextAlignmentCenter, 0);
 }
 
 static void update_time() {

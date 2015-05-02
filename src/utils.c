@@ -29,9 +29,9 @@ void draw_text_with_outline(GContext *ctx, const char * text, GFont const font, 
     graphics_draw_text(ctx, text, font, coords, overflow_mode, alignment, NULL);
 }  
   
-int int_to_roman(int number, char* result, int* result_buffer_len) {
+bool int_to_roman(int number, char* result, int* result_buffer_len) {
   if ((number < 0) || (number > 3999)) {
-    return 0;
+    return false;
   }
   
   int ints[] =   {1000, 900,  500, 400,  100,  90,  50,   40,  10,   9,    5,   4,    1};
@@ -51,7 +51,7 @@ int int_to_roman(int number, char* result, int* result_buffer_len) {
   }
   
   if((!result) || (!result_buffer_len) || (*result_buffer_len < size_for_roman_numerals)) {
-    return 0;
+    return false;
   }
   
   temp_number = number;
@@ -68,5 +68,5 @@ int int_to_roman(int number, char* result, int* result_buffer_len) {
   }
  
   
-  return 1;
+  return true;
 }
