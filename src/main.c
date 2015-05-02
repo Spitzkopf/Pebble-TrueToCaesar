@@ -50,8 +50,19 @@ static void update_minutes(Layer *this_layer, GContext *ctx) {
 }
 
 static void update_motivational_text(Layer *this_layer, GContext *ctx) {
-   static char motivational_text[] = "Roma delenda est";
-   draw_text_with_outline(ctx, motivational_text, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 0);
+  static char motivational_text[] = "Roma delenda est";
+  GRect battery_layer_rect = layer_get_frame(inverter_layer_get_layer(s_battery_layer));
+
+  /*APP_LOG(APP_LOG_LEVEL_INFO, "updating motivatinal text");
+    APP_LOG(APP_LOG_LEVEL_INFO, "battery layer: %hu", battery_layer_rect.size.h);
+    APP_LOG(APP_LOG_LEVEL_INFO, "motivatinal: %d", (int)(MOTIVATIONAL_LAYER_Y + (MOTIVATIONAL_LAYER_HEIGHT / 2)));*/
+
+  //if the inversion layer is in the middle of the text +-, inverse the coloring
+  if (battery_layer_rect.size.h >= (MOTIVATIONAL_LAYER_Y + (MOTIVATIONAL_LAYER_HEIGHT / 2))) {
+    draw_text_with_outline(ctx, motivational_text, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 1);
+  } else {
+    draw_text_with_outline(ctx, motivational_text, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 0);
+  }
 }
 
 static void battery_state_subscriber(BatteryChargeState charge) {
@@ -64,6 +75,8 @@ static void battery_state_subscriber(BatteryChargeState charge) {
     cover_percentage = ((10.0 - battery_tens) / 10);
     layer_set_frame(inverter_layer_get_layer(s_battery_layer), GRect(0, 0, PEBBLE_WIDTH,PEBBLE_HEIGHT * cover_percentage));
   }
+  //the motivational text may need to recolor due to the inversion
+  layer_mark_dirty(s_motivational_text_layer);
 }
 
 static void update_time() {
