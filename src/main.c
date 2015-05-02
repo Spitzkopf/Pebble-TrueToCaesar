@@ -28,7 +28,7 @@ static void update_hours(Layer *this_layer, GContext *ctx) {
   
   int_to_roman(hours_as_12, hours_buff, &hours_buffer_len);
   
-  draw_text_with_outline(ctx, hours_buff, s_roman_font_30, GRect(2, 2, 144, 30), GTextOverflowModeFill, GTextAlignmentCenter, 1);
+  draw_text_with_outline(ctx, hours_buff, s_roman_font_30, GRect(2, 2, PEBBLE_WIDTH, HOURS_LAYER_HEIGHT - 5), GTextOverflowModeFill, GTextAlignmentCenter, 1);
 }
 
 static void update_minutes(Layer *this_layer, GContext *ctx) {
@@ -44,12 +44,12 @@ static void update_minutes(Layer *this_layer, GContext *ctx) {
     memset(minutes_buff, '\0', MAX_MINUTES_BUFFER);
   }
   
-  draw_text_with_outline(ctx, minutes_buff, s_roman_font_30, GRect(2, 2, 144, 35), GTextOverflowModeFill, GTextAlignmentCenter, 1);
+  draw_text_with_outline(ctx, minutes_buff, s_roman_font_30, GRect(2, 2, PEBBLE_WIDTH, MINUTE_LAYER_HEIGHT - 5), GTextOverflowModeFill, GTextAlignmentCenter, 1);
 }
 
 static void update_motivational_text(Layer *this_layer, GContext *ctx) {
    static char motivational_text[] = "Roma delenda est";
-   draw_text_with_outline(ctx, motivational_text, s_roman_font_20, GRect(2, 2, 144, 40), GTextOverflowModeFill, GTextAlignmentCenter, 0);
+   draw_text_with_outline(ctx, motivational_text, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 0);
 }
 
 static void update_time() {
@@ -61,16 +61,16 @@ static void update_time() {
 
 static void main_window_load(Window *window) {
   s_nero_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_NERO_WHITE_ON_BLACK);
-  s_background_layer = bitmap_layer_create(GRect(0, 0, 144, 168));
+  s_background_layer = bitmap_layer_create(GRect(0, 0, PEBBLE_WIDTH, PEBBLE_HEIGHT));
   
   bitmap_layer_set_bitmap(s_background_layer, s_nero_bitmap);
   
   layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_background_layer));
   
   // Create time TextLayer
-  s_hours_layer = layer_create(GRect(0, 98, 144, 35));
-  s_minutes_layer = layer_create(GRect(0, 133, 144, 40));
-  s_motivational_text_layer = layer_create(GRect(0, 5, 144, 40));
+  s_hours_layer = layer_create(GRect(HOURS_LAYER_X, HOURS_LAYER_Y, PEBBLE_WIDTH, HOURS_LAYER_HEIGHT));
+  s_minutes_layer = layer_create(GRect(MINUTES_LAYER_X, MINUTES_LAYER_Y, PEBBLE_WIDTH, MINUTE_LAYER_HEIGHT));
+  s_motivational_text_layer = layer_create(GRect(MOTIVATIONAL_LAYER_X, MOTIVATIONAL_LAYER_Y, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT));
   
   layer_set_update_proc(s_hours_layer, update_hours);
   layer_set_update_proc(s_minutes_layer, update_minutes);
