@@ -113,6 +113,8 @@ static void main_window_load(Window *window) {
   layer_add_child(window_get_root_layer(window), s_minutes_layer);
   layer_add_child(window_get_root_layer(window), s_motivational_text_layer);
   layer_mark_dirty(s_motivational_text_layer);
+  //update to battery at launch
+  battery_state_subscriber(battery_state_service_peek());
 }
 
 static void main_window_unload(Window *window) {
