@@ -75,13 +75,11 @@ static void update_motivational_text(Layer *this_layer, GContext *ctx) {
 }
 
 static void battery_state_subscriber(BatteryChargeState charge) {
-  int battery_tens = 0;
   double cover_percentage = 0;
   if (charge.is_plugged) {
     layer_set_frame(inverter_layer_get_layer(s_battery_layer), GRect(0, 0, 0, 0));
   } else if(0 == (charge.charge_percent % 10)) {
-    battery_tens = charge.charge_percent / 10;
-    cover_percentage = ((10.0 - battery_tens) / 10);
+    cover_percentage = ((10.0 - (charge.charge_percent / 10)) / 10);
     layer_set_frame(inverter_layer_get_layer(s_battery_layer), GRect(0, 0, PEBBLE_WIDTH,PEBBLE_HEIGHT * cover_percentage));
   }
   //the motivational text may need to recolor due to the inversion
@@ -194,16 +192,21 @@ static void main_window_load(Window *window) {
 }
 
 static void main_window_unload(Window *window) {
+  //destroy hours, minutes, and motivational text
   layer_destroy(s_hours_layer);
   layer_destroy(s_minutes_layer);
   layer_destroy(s_motivational_text_layer);
+  
+  //destroy statusbox and its content
   layer_destroy(s_statusbox_layer);
   layer_destroy(s_statusbox_content_layer);
   
+  //destroy backgrdound and its inverter
   gbitmap_destroy(s_nero_bitmap);
   bitmap_layer_destroy(s_background_layer);
   inverter_layer_destroy(s_battery_layer);
   
+  //unsubscriber from all
   battery_state_service_unsubscribe();
   bluetooth_connection_service_unsubscribe();
 }
@@ -213,6 +216,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 }
 
 static void init() {
+  //load up all fonts
   load_fonts();
   
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
@@ -229,6 +233,8 @@ static void init() {
 
 static void deinit() {
   window_destroy(s_main_window);
+  
+  //unload custom fonts
   unload_fonts();
 }
 
