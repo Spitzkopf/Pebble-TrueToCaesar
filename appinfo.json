@@ -1,0 +1,36 @@
+{
+    "appKeys": {},
+    "capabilities": [
+        ""
+    ],
+    "companyName": "mose122@gmail.com",
+    "longName": "TrueToCaesar",
+    "projectType": "native",
+    "resources": {
+        "media": [
+            {
+                "file": "images/nero.png",
+                "name": "IMAGE_NERO_WHITE_ON_BLACK",
+                "type": "png"
+            },
+            {
+                "file": "fonts/AUGUSTUS.TTF",
+                "name": "FONT_AUGUSTUS_ROMAN_14",
+                "type": "font"
+            },
+            {
+                "file": "fonts/AUGUSTUS.TTF",
+                "name": "FONT_AUGUSTUS_ROMAN_30",
+                "type": "font"
+            }
+        ]
+    },
+    "sdkVersion": "2",
+    "shortName": "TrueToCaesar",
+    "uuid": "449c9540-c680-493e-9784-5cbaa3716a91",
+    "versionCode": 1,
+    "versionLabel": "1.0",
+    "watchapp": {
+        "watchface": true
+    }
+}
