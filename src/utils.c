@@ -1,6 +1,6 @@
 #include "utils.h"
   
-void draw_text_with_outline(GContext *ctx, const char * text, GFont const font, GRect coords, const GTextOverflowMode overflow_mode, const GTextAlignment alignment, int invert){
+void draw_text_with_outline(GContext *ctx, const char * text, GFont const font, GRect coords, const GTextOverflowMode overflow_mode, const GTextAlignment alignment, bool invert){
     graphics_context_set_text_color(ctx, invert ? GColorBlack : GColorWhite);
   
     GRect first_coords = coords;

@@ -36,7 +36,7 @@ static void update_hours(Layer *this_layer, GContext *ctx) {
     TERMINATE_AND_LOG_ERROR("Failed converting hours to roman numerals. Hour: %d", hours_as_12);
   }
   
-  draw_text_with_outline(ctx, hours_buff, s_roman_font_30, GRect(2, 2, PEBBLE_WIDTH, HOURS_LAYER_HEIGHT - 5), GTextOverflowModeFill, GTextAlignmentCenter, 1);
+  draw_text_with_outline(ctx, hours_buff, s_roman_font_30, GRect(2, 2, PEBBLE_WIDTH, HOURS_LAYER_HEIGHT - 5), GTextOverflowModeFill, GTextAlignmentCenter, true);
 }
 
 static void update_minutes(Layer *this_layer, GContext *ctx) {
@@ -54,7 +54,7 @@ static void update_minutes(Layer *this_layer, GContext *ctx) {
     memset(minutes_buff, '\0', MAX_MINUTES_BUFFER);
   }
   
-  draw_text_with_outline(ctx, minutes_buff, s_roman_font_30, GRect(2, 2, PEBBLE_WIDTH, MINUTE_LAYER_HEIGHT - 5), GTextOverflowModeFill, GTextAlignmentCenter, 1);
+  draw_text_with_outline(ctx, minutes_buff, s_roman_font_30, GRect(2, 2, PEBBLE_WIDTH, MINUTE_LAYER_HEIGHT - 5), GTextOverflowModeFill, GTextAlignmentCenter, true);
 }
 
 static void update_time() {
@@ -68,9 +68,9 @@ static void update_motivational_text(Layer *this_layer, GContext *ctx) {
   
   //if the inversion layer is in the middle of the text +-, inverse the coloring
   if (battery_layer_rect.size.h >= (MOTIVATIONAL_LAYER_Y + (MOTIVATIONAL_LAYER_HEIGHT / 2))) {
-    draw_text_with_outline(ctx, MOTIVATIONAL_TEXT, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 1);
+    draw_text_with_outline(ctx, MOTIVATIONAL_TEXT, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, true);
   } else {
-    draw_text_with_outline(ctx, MOTIVATIONAL_TEXT, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, 0);
+    draw_text_with_outline(ctx, MOTIVATIONAL_TEXT, s_roman_font_14, GRect(2, 2, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT), GTextOverflowModeFill, GTextAlignmentCenter, false);
   }
 }
 
