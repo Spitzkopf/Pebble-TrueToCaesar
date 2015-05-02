@@ -57,6 +57,12 @@ static void update_minutes(Layer *this_layer, GContext *ctx) {
   draw_text_with_outline(ctx, minutes_buff, s_roman_font_30, GRect(2, 2, PEBBLE_WIDTH, MINUTE_LAYER_HEIGHT - 5), GTextOverflowModeFill, GTextAlignmentCenter, 1);
 }
 
+static void update_time() {
+  // Display this time on the TextLayer
+  layer_mark_dirty(s_hours_layer);
+  layer_mark_dirty(s_minutes_layer);
+}
+
 static void update_motivational_text(Layer *this_layer, GContext *ctx) {
   GRect battery_layer_rect = layer_get_frame(inverter_layer_get_layer(s_battery_layer));
   
@@ -96,12 +102,6 @@ static void bluetooth_state_subscriber(bool connected) {
   
   memcpy(&sb_info->bt_connected, &connected, sizeof(bool));
   layer_mark_dirty(s_statusbox_content_layer);
-}
-
-static void update_time() {
-  // Display this time on the TextLayer
-  layer_mark_dirty(s_hours_layer);
-  layer_mark_dirty(s_minutes_layer);
 }
 
 static void draw_status_box_layer(Layer *this_layer, GContext *ctx) {
@@ -150,40 +150,45 @@ static Layer* initialize_status_box_content(Layer* status_box_layer) {
 }
 
 static void main_window_load(Window *window) {
-  s_nero_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_NERO_WHITE_ON_BLACK);
+  //initialize background
   s_background_layer = bitmap_layer_create(GRect(0, 0, PEBBLE_WIDTH, PEBBLE_HEIGHT));
-  
+  s_nero_bitmap = gbitmap_create_with_resource(RESOURCE_ID_IMAGE_NERO_WHITE_ON_BLACK);
   bitmap_layer_set_bitmap(s_background_layer, s_nero_bitmap);
-  
-  s_battery_layer = inverter_layer_create(GRect(0, 0, 0, 0));
-  s_statusbox_layer = initialize_status_box();
-  s_statusbox_content_layer = initialize_status_box_content(s_statusbox_layer);
-  
   layer_add_child(window_get_root_layer(window), bitmap_layer_get_layer(s_background_layer));
+  
+  //initialize background inverter layer
+  s_battery_layer = inverter_layer_create(GRect(0, 0, 0, 0));
   layer_add_child(window_get_root_layer(window), inverter_layer_get_layer(s_battery_layer));
+  
+  //initialize statusbox layer
+  s_statusbox_layer = initialize_status_box();
   layer_add_child(window_get_root_layer(window), s_statusbox_layer);
+  s_statusbox_content_layer = initialize_status_box_content(s_statusbox_layer);
   layer_add_child(window_get_root_layer(window), s_statusbox_content_layer);
-  
-  battery_state_service_subscribe(battery_state_subscriber);
-  bluetooth_connection_service_subscribe(bluetooth_state_subscriber);
                                           
-  // Create time TextLayer
+  //initialize hour layer
   s_hours_layer = layer_create(GRect(HOURS_LAYER_X, HOURS_LAYER_Y, PEBBLE_WIDTH, HOURS_LAYER_HEIGHT));
-  s_minutes_layer = layer_create(GRect(MINUTES_LAYER_X, MINUTES_LAYER_Y, PEBBLE_WIDTH, MINUTE_LAYER_HEIGHT));
-  s_motivational_text_layer = layer_create(GRect(MOTIVATIONAL_LAYER_X, MOTIVATIONAL_LAYER_Y, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT));
-  
   layer_set_update_proc(s_hours_layer, update_hours);
-  layer_set_update_proc(s_minutes_layer, update_minutes);
-  layer_set_update_proc(s_motivational_text_layer, update_motivational_text);
-  
-  // Add it as a child layer to the Window's root layer
   layer_add_child(window_get_root_layer(window), s_hours_layer);
+  
+  //initialize minutes layer
+  s_minutes_layer = layer_create(GRect(MINUTES_LAYER_X, MINUTES_LAYER_Y, PEBBLE_WIDTH, MINUTE_LAYER_HEIGHT));
+  layer_set_update_proc(s_minutes_layer, update_minutes);
   layer_add_child(window_get_root_layer(window), s_minutes_layer);
+  
+  //initialize motivational text
+  s_motivational_text_layer = layer_create(GRect(MOTIVATIONAL_LAYER_X, MOTIVATIONAL_LAYER_Y, PEBBLE_WIDTH, MOTIVATIONAL_LAYER_HEIGHT)); 
+  layer_set_update_proc(s_motivational_text_layer, update_motivational_text);
   layer_add_child(window_get_root_layer(window), s_motivational_text_layer);
+  
+  //render the static layers
   layer_mark_dirty(s_motivational_text_layer);
   layer_mark_dirty(s_statusbox_layer);
   
-  //update to battery at launch
+  //add battery and bluetooth subscribers
+  battery_state_service_subscribe(battery_state_subscriber);
+  bluetooth_connection_service_subscribe(bluetooth_state_subscriber);
+  
   battery_state_subscriber(battery_state_service_peek());
   bluetooth_state_subscriber(bluetooth_connection_service_peek());
 }
